@@ -10,6 +10,7 @@ pub(crate) struct TransformedRecord {
     langs: Vec<String>,
     hashtags: Vec<String>,
     urls: Vec<String>,
+    hostnames: Vec<String>,
 }
 
 impl TransformedRecord {
@@ -35,11 +36,26 @@ impl TransformedRecord {
             .map(|mat| mat.as_str().to_string())
             .collect()
     }
+
     fn extract_urls(text: &str) -> Vec<String> {
-        let url_regex = Regex::new(r"https?://[^\s]+").unwrap();
+        let url_regex =
+            Regex::new(r"(?i)\b(?:[a-z][\w+.-]*://[^\s/$.?#].[^\s]*|localhost(?::\d{1,5})?/?)\b")
+                .unwrap();
         url_regex
             .find_iter(text)
             .map(|mat| mat.as_str().to_string())
+            .collect()
+    }
+
+    fn extract_hosts(urls: Vec<String>) -> Vec<String> {
+        let host_regex =
+            Regex::new(r"(?i)^(?:[a-z][\w+.-]*://)?(?:[^@/\n]+@)?([^:/?\n]+)").unwrap();
+        urls.iter()
+            .filter_map(|url| {
+                host_regex
+                    .captures(url)
+                    .and_then(|caps| caps.get(1).map(|host| host.as_str().to_string()))
+            })
             .collect()
     }
 
@@ -54,6 +70,7 @@ impl TransformedRecord {
         });
         let hashtags = Self::extract_hashtags(&text);
         let urls = Self::extract_urls(&text);
+        let hostnames = Self::extract_hosts(urls.clone());
         let langs = Self::convert_lang_codes(&lang_codes);
         TransformedRecord {
             created_at,
@@ -61,6 +78,7 @@ impl TransformedRecord {
             langs,
             hashtags,
             urls,
+            hostnames,
         }
     }
 }
