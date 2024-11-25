@@ -15,7 +15,7 @@ pub(crate) struct TransformedRecord {
 
 impl TransformedRecord {
     fn convert_lang_codes(lang_codes: &[String]) -> Vec<String> {
-        let re = Regex::new(r"^([a-z]{2})").unwrap();
+        let re = Regex::new(r"^([a-z]{2,3})").unwrap();
         lang_codes
             .iter()
             .filter_map(|lang_code| {
@@ -23,8 +23,8 @@ impl TransformedRecord {
                     .captures(lang_code)
                     .and_then(|cap| cap.get(1).map(|m| m.as_str()))
                     .unwrap_or(lang_code);
-
-                lookup(short_code).map(|lang| lang.reference_name.clone())
+                let truncated_code = &short_code[..short_code.len().min(3)];
+                lookup(truncated_code).map(|lang| lang.reference_name.clone())
             })
             .collect()
     }
