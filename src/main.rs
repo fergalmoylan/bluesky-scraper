@@ -1,7 +1,10 @@
 mod cid_compat;
+mod config;
 mod frames;
+mod producer;
 mod record;
 
+use crate::config::Config;
 use anyhow::Result;
 use atrium_api::app::bsky::feed::post::Record;
 use atrium_api::com::atproto::sync::subscribe_repos::{Commit, NSID};
@@ -15,7 +18,7 @@ use tokio_tungstenite::tungstenite::Message;
 
 const FIREHOSE_DOMAIN: &str = "bsky.network";
 
-async fn handle_commit(commit: &Commit) -> Result<()> {
+async fn handle_commit(commit: &Commit, config: &Config) -> Result<()> {
     for op in &commit.ops {
         let collection = op.path.split('/').next().expect("op.path is empty");
         if op.action == "create" && collection == atrium_api::app::bsky::feed::Post::NSID {
@@ -29,7 +32,7 @@ async fn handle_commit(commit: &Commit) -> Result<()> {
                 let record = serde_ipld_dagcbor::from_reader::<Record, _>(&mut item.as_slice())?;
 
                 let transformed_record = TransformedRecord::from_original(record);
-                println!("{:#?}", transformed_record);
+                producer::send_to_kafka(config, transformed_record).await;
             }
         }
     }
@@ -38,6 +41,8 @@ async fn handle_commit(commit: &Commit) -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let config = Config::from_env();
+
     let (mut stream, _) = connect_async(format!("wss://{FIREHOSE_DOMAIN}/xrpc/{NSID}")).await?;
     while let Some(result) = {
         if let Some(Ok(Message::Binary(data))) = stream.next().await {
@@ -49,7 +54,7 @@ async fn main() -> Result<()> {
         if let Ok(Frame::Message(Some(t), message)) = result {
             if t.as_str() == "#commit" {
                 let commit = serde_ipld_dagcbor::from_reader(message.body.as_slice())?;
-                if let Err(err) = handle_commit(&commit).await {
+                if let Err(err) = handle_commit(&commit, &config).await {
                     eprintln!("FAILED: {err:?}");
                 }
             }
