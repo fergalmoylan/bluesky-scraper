@@ -180,7 +180,10 @@ dependencies = [
  "cid 0.11.1",
  "futures",
  "ipld-core",
+ "locale-codes",
+ "regex",
  "rs-car",
+ "serde",
  "serde_ipld_dagcbor",
  "serde_json",
  "tokio",
@@ -782,6 +785,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+
+[[package]]
 name = "libc"
 version = "0.2.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -847,6 +856,19 @@ name = "litemap"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
+
+[[package]]
+name = "locale-codes"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1f4cc9d2da40c19763d5dd398baf388f2cc1473ca3d53c578c75e9ad0402324"
+dependencies = [
+ "lazy_static",
+ "log",
+ "regex",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "lock_api"
