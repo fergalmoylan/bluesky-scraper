@@ -1,0 +1,17 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly schedule
+  workflow_dispatch: # Allows manual runs
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo install cargo-audit
+      - run: cargo audit
