@@ -3,7 +3,13 @@ name: Security Audit
 on:
   schedule:
     - cron: '0 0 * * 0' # Weekly schedule
-  workflow_dispatch: # Allows manual runs
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   audit:

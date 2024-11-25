@@ -1,5 +1,6 @@
 mod cid_compat;
 mod frames;
+mod record;
 
 use anyhow::Result;
 use atrium_api::app::bsky::feed::post::Record;
@@ -8,6 +9,7 @@ use atrium_api::types::{CidLink, Collection};
 use cid_compat::CidOld;
 use frames::Frame;
 use futures::StreamExt;
+use record::TransformedRecord;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -25,7 +27,9 @@ async fn handle_commit(commit: &Commit) -> Result<()> {
                 Some(CidLink(cid)) == op.cid
             }) {
                 let record = serde_ipld_dagcbor::from_reader::<Record, _>(&mut item.as_slice())?;
-                println!("{record:#?}")
+
+                let transformed_record = TransformedRecord::from_original(record);
+                println!("{:#?}", transformed_record);
             }
         }
     }
