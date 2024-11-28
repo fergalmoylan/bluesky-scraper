@@ -1,20 +1,26 @@
+mod app_metrics;
 mod cid_compat;
 mod config;
 mod frames;
 mod producer;
 mod record;
 
+use crate::app_metrics::gather_metrics;
 use crate::config::Config;
 use anyhow::Result;
 use atrium_api::app::bsky::feed::post::Record;
 use atrium_api::com::atproto::sync::subscribe_repos::{Commit, NSID};
 use atrium_api::types::{CidLink, Collection};
 use cid_compat::CidOld;
+use dotenv::dotenv;
 use frames::Frame;
 use futures::StreamExt;
+use log::info;
 use rdkafka::producer::FutureProducer;
 use rdkafka::ClientConfig;
 use record::TransformedRecord;
+use std::time::{Duration, SystemTime};
+use tokio::time;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -43,8 +49,20 @@ async fn handle_commit(commit: &Commit, config: &Config, producer: &FutureProduc
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv().ok();
+    env_logger::init();
     let config = Config::from_env();
-    println!("Running with config: {:#?}", &config);
+    info!("Running with config: {:#?}", &config);
+
+    let start_time = SystemTime::now();
+
+    tokio::spawn(async move {
+        let mut interval = time::interval(Duration::from_secs(10));
+        loop {
+            interval.tick().await;
+            gather_metrics(&start_time).await;
+        }
+    });
 
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", config.kafka_addresses.join(","))
