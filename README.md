@@ -6,7 +6,7 @@ The data is formatted into the following structure before being sent to Kafka:
 {
   "created_at": "2024-11-25T19:11:20.256Z",
   "text": "This is a Bluesky post #Bluesky #Follow https://bsky.app/discover",
-  "langs": ["English"],
+  "languages": ["English"],
   "hashtags": ["#Bluesky", "#Follow"],
   "urls": ["https://bsky.app/discover"],
   "hostnames": ["bsky.app"]
