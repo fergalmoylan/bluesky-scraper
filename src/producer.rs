@@ -1,5 +1,7 @@
+use crate::app_metrics::KAFKA_LATENCY;
 use crate::config::Config;
 use crate::record::TransformedRecord;
+use log::error;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use std::time::Duration;
 
@@ -14,9 +16,11 @@ pub async fn send_to_kafka(producer: &FutureProducer, config: &Config, payload: 
         FutureRecord::<(), String>::to(kafka_topic).payload(&json_record),
         Duration::from_secs(0),
     );
-
+    let timer = KAFKA_LATENCY.start_timer();
     match produce_future.await {
-        Ok(..) => (),
-        Err((e, _)) => eprintln!("Error: {:?}", e),
+        Ok(..) => {
+            timer.observe_duration();
+        }
+        Err((e, _)) => error!("Error: {:?}", e),
     }
 }

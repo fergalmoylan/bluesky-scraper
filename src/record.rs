@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) struct TransformedRecord {
     created_at: String,
     text: String,
-    langs: Vec<String>,
+    languages: Vec<String>,
     hashtags: Vec<String>,
     urls: Vec<String>,
     hostnames: Vec<String>,
@@ -71,11 +71,11 @@ impl TransformedRecord {
         let hashtags = Self::extract_hashtags(&text);
         let urls = Self::extract_urls(&text);
         let hostnames = Self::extract_hosts(urls.clone());
-        let langs = Self::convert_lang_codes(&lang_codes);
+        let languages = Self::convert_lang_codes(&lang_codes);
         TransformedRecord {
             created_at,
             text,
-            langs,
+            languages,
             hashtags,
             urls,
             hostnames,
