@@ -1,10 +1,8 @@
-use prometheus::{self, Histogram};
-use std::time::SystemTime;
-
 use lazy_static::lazy_static;
 use log::info;
 use prometheus::core::Number;
 use prometheus::register_histogram;
+use prometheus::{self, Histogram};
 
 lazy_static! {
     pub static ref KAFKA_LATENCY: Histogram = register_histogram!(
@@ -15,14 +13,14 @@ lazy_static! {
     .unwrap();
 }
 
-pub async fn gather_metrics(start_time: &SystemTime) {
+pub async fn gather_metrics(prev_count: &f64, prev_time: &f64) -> (f64, f64) {
     let counter = KAFKA_LATENCY.get_sample_count().into_f64();
     let timer = KAFKA_LATENCY.get_sample_sum();
-    let avg_latency = (timer / counter) * 1000.0;
-    let elapsed = start_time.elapsed().unwrap().as_secs();
-    let tps = counter / elapsed.into_f64();
+    let avg_latency = (timer - prev_time) / (counter - prev_count) * 1000.0;
+    let tps = (counter - prev_count) / 10.0;
     info!(
         "{:<14} {:<10} {:<4} {:<10.1} {:<2} {:<2.2}ms",
         "Total Records:", counter as u64, "TPS:", tps, "Avg Latency:", avg_latency
     );
+    (counter, timer)
 }
