@@ -19,7 +19,7 @@ use log::info;
 use rdkafka::producer::FutureProducer;
 use rdkafka::ClientConfig;
 use record::TransformedRecord;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 use tokio::time;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
@@ -54,13 +54,13 @@ async fn main() -> Result<()> {
     let config = Config::from_env();
     info!("Running with config: {:#?}", &config);
 
-    let start_time = SystemTime::now();
-
     tokio::spawn(async move {
         let mut interval = time::interval(Duration::from_secs(10));
+        let mut prev_count = 0.0;
+        let mut prev_time = 0.0;
         loop {
             interval.tick().await;
-            gather_metrics(&start_time).await;
+            (prev_count, prev_time) = gather_metrics(&prev_count, &prev_time).await;
         }
     });
 
