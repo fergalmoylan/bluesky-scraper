@@ -9,7 +9,8 @@ The data is formatted into the following structure before being sent to Kafka:
   "languages": ["English"],
   "hashtags": ["#Bluesky", "#Follow"],
   "urls": ["https://bsky.app/discover"],
-  "hostnames": ["bsky.app"]
+  "hostnames": ["bsky.app"],
+  "sentiment": {"score" :0.0, "comparative-score": 0.0, "sentiment": "neutral"}
 }
 ```
 The hashtags, urls, and hostnames are extracted from the text field.

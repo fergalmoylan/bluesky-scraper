@@ -1,7 +1,15 @@
 use atrium_api::app::bsky::feed::post::Record;
 use locale_codes::language::lookup;
 use regex::Regex;
+use sentiment::analyze;
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RecordSentiment {
+    pub score: f32,
+    pub comparative_score: f32,
+    pub sentiment: String,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct TransformedRecord {
@@ -11,9 +19,27 @@ pub(crate) struct TransformedRecord {
     hashtags: Vec<String>,
     urls: Vec<String>,
     hostnames: Vec<String>,
+    sentiment: RecordSentiment,
 }
 
 impl TransformedRecord {
+    fn calculate_sentiment(text: String) -> RecordSentiment {
+        let analysis = analyze(text.clone());
+        let score = analysis.score;
+        let comparative_score = analysis.comparative;
+        let sentiment = if score > 0.0 {
+            String::from("positive")
+        } else if score < 0.0 {
+            String::from("negative")
+        } else {
+            String::from("neutral")
+        };
+        RecordSentiment {
+            score,
+            comparative_score,
+            sentiment,
+        }
+    }
     fn convert_lang_codes(lang_codes: &[String]) -> Vec<String> {
         let re = Regex::new(r"^([a-z]{2,3})").unwrap();
         lang_codes
@@ -72,6 +98,7 @@ impl TransformedRecord {
         let urls = Self::extract_urls(&text);
         let hostnames = Self::extract_hosts(urls.clone());
         let languages = Self::convert_lang_codes(&lang_codes);
+        let sentiment = Self::calculate_sentiment(text.clone());
         TransformedRecord {
             created_at,
             text,
@@ -79,6 +106,7 @@ impl TransformedRecord {
             hashtags,
             urls,
             hostnames,
+            sentiment,
         }
     }
 }
