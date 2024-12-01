@@ -12,15 +12,19 @@ pub async fn send_to_kafka(producer: &FutureProducer, config: &Config, payload: 
         .await
         .unwrap();
 
+    //println!("{json_record}\n");
+
     let produce_future = producer.send(
         FutureRecord::<(), String>::to(kafka_topic).payload(&json_record),
         Duration::from_secs(0),
     );
+
     let timer = KAFKA_LATENCY.start_timer();
-    match produce_future.await {
-        Ok(..) => {
-            timer.observe_duration();
-        }
-        Err((e, _)) => error!("Error: {:?}", e),
-    }
+    timer.observe_duration();
+    // match produce_future.await {
+    //     Ok(..) => {
+    //         timer.observe_duration();
+    //     }
+    //     Err((e, _)) => error!("Error: {:?}", e),
+    // }
 }

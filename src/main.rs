@@ -18,15 +18,16 @@ use futures::StreamExt;
 use log::info;
 use rdkafka::producer::FutureProducer;
 use rdkafka::ClientConfig;
-use record::TransformedRecord;
+use record::{TransformedRecord, RustBertModels};
 use std::time::Duration;
+use rust_bert::pipelines::sentiment::SentimentModel;
 use tokio::time;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
 const FIREHOSE_DOMAIN: &str = "bsky.network";
 
-async fn handle_commit(commit: &Commit, config: &Config, producer: &FutureProducer) -> Result<()> {
+async fn handle_commit(commit: &Commit, config: &Config, producer: &FutureProducer, models: &RustBertModels) -> Result<()> {
     for op in &commit.ops {
         let collection = op.path.split('/').next().expect("op.path is empty");
         if op.action == "create" && collection == atrium_api::app::bsky::feed::Post::NSID {
@@ -39,7 +40,7 @@ async fn handle_commit(commit: &Commit, config: &Config, producer: &FutureProduc
             }) {
                 let record = serde_ipld_dagcbor::from_reader::<Record, _>(&mut item.as_slice())?;
 
-                let transformed_record = TransformedRecord::from_original(record);
+                let transformed_record = TransformedRecord::from_original(record, models);
                 producer::send_to_kafka(producer, config, transformed_record).await;
             }
         }
@@ -48,7 +49,7 @@ async fn handle_commit(commit: &Commit, config: &Config, producer: &FutureProduc
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn run(models: RustBertModels) -> Result<()> {
     dotenv().ok();
     env_logger::init();
     let config = Config::from_env();
@@ -84,11 +85,16 @@ async fn main() -> Result<()> {
         if let Ok(Frame::Message(Some(t), message)) = result {
             if t.as_str() == "#commit" {
                 let commit = serde_ipld_dagcbor::from_reader(message.body.as_slice())?;
-                if let Err(err) = handle_commit(&commit, &config, &producer).await {
+                if let Err(err) = handle_commit(&commit, &config, &producer, &models).await {
                     eprintln!("FAILED: {err:?}");
                 }
             }
         }
     }
     Ok(())
+}
+
+fn main() {
+    let models = RustBertModels::new();
+    run(models).unwrap();
 }
